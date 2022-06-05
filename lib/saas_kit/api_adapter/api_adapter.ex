@@ -15,7 +15,6 @@ defmodule SaasKit.ApiAdapter do
         data: resource
       }
     }
-    |> IO.inspect()
     |> Jason.encode!()
     |> post()
     |> parse_data()
