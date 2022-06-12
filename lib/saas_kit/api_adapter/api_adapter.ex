@@ -1,5 +1,5 @@
 defmodule SaasKit.ApiAdapter do
-  @base_url "http://localhost:4000"
+  @base_url "https://livesaaskit.com/"
 
   def run(resource, name) do
     fields =
@@ -20,10 +20,14 @@ defmodule SaasKit.ApiAdapter do
     |> parse_data()
   end
 
+  defp get_url do
+    Application.get_env(:saas_kit, :url) || @base_url
+  end
+
   defp post(params) do
     api_key = Application.get_env(:saas_kit, :api_key)
 
-    HTTPoison.post("#{@base_url}/api/generators", params, [
+    HTTPoison.post("#{get_url()}/api/generators", params, [
       {"Content-Type", "application/json"},
       {"x-api-key", api_key}
     ])
