@@ -18,19 +18,49 @@ defmodule SaasKit.MixUtils.InstructionParser do
   # String.split(string, "\n") |> Enum.slice(1..-2) |> Enum.join("\n")
 
   def parse(%{"rule" => "print_shell", "filename" => filename, "template" => template}) do
-    Mix.shell().info """
+    Mix.shell().info("""
 
     Add the code in #{filename}:
 
     #{template}
-    """
+    """)
   end
 
-  def parse(%{"rule" => "create_or_append", "filename" => filename, "template" => template, "target" => target, "lines" => [_|_] = lines}) do
+  def parse(%{
+        "rule" => "create_or_append_file",
+        "filename" => filename,
+        "string_to_replace" => "LAST_END",
+        "template" => template,
+        "string_to_insert" => string_to_insert
+      }) do
+    if File.exists?(filename) == false do
+      Oden.create_file filename do
+        template
+      end
+    end
+
+    Oden.inject_into_file filename, before: "LAST_END" do
+      string_to_insert
+    end
+  end
+
+  def parse(%{
+        "rule" => "create_or_append",
+        "filename" => filename,
+        "template" => template,
+        "target" => target,
+        "lines" => [_ | _] = lines
+      }) do
     if File.exists?(filename) do
       Enum.each(lines, fn [start, stop] ->
         range = Range.new(start, stop)
-        template = template |> String.split("\n") |> Enum.slice(range) |> Enum.join("\n")
+
+        template =
+          template
+          |> String.split("\n")
+          |> Enum.slice(range)
+          |> Enum.concat(["\n"])
+          |> Enum.join("\n")
 
         Oden.inject_into_file filename, before: target do
           template

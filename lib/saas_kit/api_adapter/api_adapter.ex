@@ -15,6 +15,7 @@ defmodule SaasKit.ApiAdapter do
         data: resource
       }
     }
+    |> maybe_debug()
     |> Jason.encode!()
     |> post()
     |> parse_data()
@@ -52,4 +53,12 @@ defmodule SaasKit.ApiAdapter do
   end
 
   defp parse_data(_), do: {:error, "There was an error"}
+
+  defp maybe_debug(data) do
+    if Application.get_env(:saas_kit, :debug) do
+      IO.inspect data
+    end
+
+    data
+  end
 end

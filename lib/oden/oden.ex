@@ -56,6 +56,9 @@ defmodule Oden do
               |> Kernel.<>(content)
               |> Kernel.<>("end\n")
 
+            # Remove extra double lines
+            new_content = String.replace(new_content, ~r/([ \t]*\n){3,}/, "\n\n")
+
             File.write(file_name, new_content)
           else
             new_content = String.replace(existing_content, before_string, "#{content}#{before_string}")
