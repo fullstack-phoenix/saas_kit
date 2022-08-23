@@ -17,6 +17,15 @@ defmodule SaasKit.MixUtils.InstructionParser do
   # if File.exists?(file_name) do
   # String.split(string, "\n") |> Enum.slice(1..-2) |> Enum.join("\n")
 
+  def parse(%{"rule" => "print_shell", "filename" => "shell", "template" => template}) do
+    Mix.shell().info("""
+
+    #{IO.ANSI.green}Install complete#{IO.ANSI.reset}
+
+    #{template}
+    """)
+  end
+
   def parse(%{"rule" => "print_shell", "filename" => filename, "template" => template}) do
     Mix.shell().info("""
 
