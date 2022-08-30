@@ -56,6 +56,7 @@ defmodule SaasKit.ApiAdapter do
 
   defp maybe_debug(data) do
     if Application.get_env(:saas_kit, :debug) do
+      IO.inspect "DEBUG FROM API ADAPTER"
       IO.inspect data
     end
 

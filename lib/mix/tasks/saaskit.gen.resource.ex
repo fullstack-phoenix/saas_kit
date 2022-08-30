@@ -15,7 +15,7 @@ defmodule Mix.Tasks.Saaskit.Gen.Resource do
     Application.ensure_all_started(:hackney)
 
     args
-    |> account_scoped_question()
+    |> maybe_ask_account_scoped_question()
     |> build_resource_from_args(__MODULE__)
     |> additional_questions()
     |> load_templates(@name)
@@ -65,6 +65,13 @@ defmodule Mix.Tasks.Saaskit.Gen.Resource do
   #   types: %{name: :string, skill: :integer},
   #   web_namespace: nil
   # }
+  defp maybe_ask_account_scoped_question(args) do
+    case Enum.any?(args, fn arg -> String.contains?(arg, ":references:") end) do
+      true -> args
+      _ -> account_scoped_question(args)
+    end
+  end
+
   def additional_questions(argument_map) do
     argument_map
     |> ask_about_associations()
@@ -127,6 +134,9 @@ defmodule Mix.Tasks.Saaskit.Gen.Resource do
     Map.put(argument_map, :associations, associations)
   end
 
+  defp ask_about_association(%{table_name: table_name} = association) when table_name in ["accounts", :accounts] do
+    association
+  end
   defp ask_about_association(%{schema_module: schema_module, table_name: table_name} = association) do
     Mix.shell().info """
 
