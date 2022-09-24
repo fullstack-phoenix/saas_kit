@@ -3,7 +3,7 @@ defmodule SaasKit.LiveComponents.DataTable do
   Data tables are used to display large sets of data in a structured way
   with sorting and pagination.
   """
-  import Phoenix.LiveView
+  import Phoenix.Component
   import Phoenix.LiveView.Helpers
 
   def data_table_link(assigns) do

@@ -1,7 +1,7 @@
 defmodule SaasKit.MixProject do
   use Mix.Project
 
-  @version "0.2.4"
+  @version "0.3.0"
 
   def project do
     [
@@ -37,7 +37,7 @@ defmodule SaasKit.MixProject do
   defp deps do
     [
       {:phoenix, ">= 1.6.0 and < 1.8.0"},
-      {:phoenix_live_view, ">= 0.17.0 and < 0.20.0"},
+      {:phoenix_live_view, ">= 0.18.0 and < 0.20.0"},
       {:phoenix_html, ">= 3.1.0 and < 4.0.0"},
       {:jason, ">= 1.2.0"},
       {:httpoison, ">= 1.8.0"},
