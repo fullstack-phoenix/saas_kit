@@ -4,18 +4,24 @@ defmodule SaasKit.ApiAdapter.Kit do
   defp get_api_key, do: Application.get_env(:saas_kit, :api_key)
   defp get_url, do: (Application.get_env(:saas_kit, :url) || @base_url)
 
-  def get_instructions(token) do
+  def get_instructions(token, options \\ %{}) do
     token
-    |> get()
+    |> get( options )
     |> maybe_debug()
     |> parse_data()
   end
 
-  defp get(token) do
-    HTTPoison.get("#{get_url()}/api/kits/#{token}", [
+  defp get(token, options) do
+    HTTPoison.get("#{get_url()}/api/kits/#{token}?#{querystring(options)}", [
       {"Content-Type", "application/json"},
       {"x-api-key", get_api_key()}
     ])
+  end
+
+  defp querystring(options) do
+    options
+    |> Enum.reduce([], fn {k, v}, memo -> ["#{k}=#{v}"|memo] end)
+    |> Enum.join("&")
   end
 
   defp parse_data({:ok, %HTTPoison.Response{body: body}}) do

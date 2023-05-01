@@ -97,11 +97,21 @@ defmodule Oden do
     end
   end
 
-  def gsub_file(file_name, "" <> string_to_replace, "" <> string_to_insert) do
+  def gsub_file(file_name, "" <> string_to_replace, "" <> string_to_insert, use_regex? \\ false) do
     if warn_if_file_is_missing(file_name) do
       existing_content = File.read!(file_name)
 
-      new_content = String.replace(existing_content, string_to_replace, string_to_insert)
+      new_content =
+        if use_regex? do
+          {:ok, regex} =
+            case String.split(string_to_replace, "€€") do
+              [regex_part, option] -> Regex.compile(regex_part, option)
+              _ -> Regex.compile(string_to_replace)
+            end
+          String.replace(existing_content, regex, string_to_insert)
+        else
+          String.replace(existing_content, string_to_replace, string_to_insert)
+        end
 
       File.write(file_name, new_content)
     end

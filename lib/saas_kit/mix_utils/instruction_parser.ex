@@ -1,21 +1,10 @@
 defmodule SaasKit.MixUtils.InstructionParser do
   def follow_instructions(instructions) do
     instructions
-    # |> Enum.map(&replace_regex/1)
     |> Enum.sort_by(fn %{"rule" => rule} -> if rule == "create_file", do: -1, else: 0 end)
     |> Enum.sort_by(fn %{"rule" => rule} -> if rule == "print_shell", do: 1, else: 0 end)
     |> Enum.each(&parse/1)
   end
-
-  # Regex.compile("end(?!.*end)")
-  # def replace_regex(%{"target" => "LAST_END"} = template) do
-  # Map.put(template, "target", ~r/end(?!.*end)/m)
-  # end
-  # def replace_regex(template), do: template
-  #
-  # create_or_inject
-  # if File.exists?(file_name) do
-  # String.split(string, "\n") |> Enum.slice(1..-2) |> Enum.join("\n")
 
   def parse(%{"rule" => "print_shell", "filename" => "shell", "template" => template}) do
     Mix.shell().info("""
@@ -129,6 +118,15 @@ defmodule SaasKit.MixUtils.InstructionParser do
         "string_to_insert" => string_to_insert
       }) do
     Oden.gsub_file(filename, string_to_replace, string_to_insert)
+  end
+
+  def parse(%{
+        "rule" => "regex_replace",
+        "filename" => filename,
+        "string_to_replace" => string_to_replace,
+        "string_to_insert" => string_to_insert
+      }) do
+    Oden.gsub_file(filename, string_to_replace, string_to_insert, true)
   end
 
   def parse(template), do: template
