@@ -1,6 +1,7 @@
 defmodule SaasKit.MixUtils.InstructionParser do
   def follow_instructions(instructions) do
     instructions
+    |> Enum.sort_by(fn %{"rule" => rule} -> if rule == "delete_file", do: -2, else: 0 end)
     |> Enum.sort_by(fn %{"rule" => rule} -> if rule == "create_file", do: -1, else: 0 end)
     |> Enum.sort_by(fn %{"rule" => rule} -> if rule == "print_shell", do: 1, else: 0 end)
     |> Enum.each(&parse/1)
@@ -22,6 +23,10 @@ defmodule SaasKit.MixUtils.InstructionParser do
 
     #{template}
     """)
+  end
+
+  def parse(%{"rule" => "delete_file", "filename" => filename}) do
+    Oden.delete_file(filename)
   end
 
   def parse(%{
