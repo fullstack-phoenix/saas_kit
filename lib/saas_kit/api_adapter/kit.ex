@@ -1,12 +1,12 @@
 defmodule SaasKit.ApiAdapter.Kit do
-  @base_url "https://livesaaskit.com/"
+  @base_url "https://livesaaskit.com"
 
   defp get_api_key, do: Application.get_env(:saas_kit, :api_key)
   defp get_url, do: (Application.get_env(:saas_kit, :url) || @base_url)
 
   def get_instructions(token, options \\ %{}) do
     token
-    |> get( options )
+    |> get(options)
     |> maybe_debug()
     |> parse_data()
   end

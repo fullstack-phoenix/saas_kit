@@ -1,10 +1,26 @@
 defmodule SaasKit.MixUtils.InstructionParser do
   def follow_instructions(instructions) do
     instructions
+    |> Enum.sort_by(fn %{"rule" => rule} -> if rule == "copy_file", do: -3, else: 0 end)
     |> Enum.sort_by(fn %{"rule" => rule} -> if rule == "delete_file", do: -2, else: 0 end)
     |> Enum.sort_by(fn %{"rule" => rule} -> if rule == "create_file", do: -1, else: 0 end)
-    |> Enum.sort_by(fn %{"rule" => rule} -> if rule == "print_shell", do: 1, else: 0 end)
+    |> Enum.sort_by(fn %{"rule" => rule} -> if rule == "run_command", do: 2, else: 0 end)
+    |> Enum.sort_by(fn %{"rule" => rule} -> if rule == "print_shell", do: 3, else: 0 end)
     |> Enum.each(&parse/1)
+  end
+
+  def parse(%{"rule" => "run_command", "filename" => _, "template" => "" <> template}) do
+    Mix.shell().info("""
+
+    #{IO.ANSI.yellow}Running mix command:#{IO.ANSI.reset}
+    #{template}
+
+    """)
+
+    [cmd|args] = String.split(template, " ")
+
+    Mix.Task.run("deps.get", [])
+    Mix.Task.run(cmd, args)
   end
 
   def parse(%{"rule" => "print_shell", "filename" => "shell", "template" => template}) do
