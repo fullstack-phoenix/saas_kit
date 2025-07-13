@@ -10,7 +10,7 @@ by adding `saas_kit` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:saas_kit, "~> 0.2.0"}
+    {:saas_kit, "~> 2.0.0"}
   ]
 end
 ```

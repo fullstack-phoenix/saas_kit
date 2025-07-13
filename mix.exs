@@ -1,13 +1,13 @@
 defmodule SaasKit.MixProject do
   use Mix.Project
 
-  @version "1.0.7"
+  @version "2.0.0"
 
   def project do
     [
       app: :saas_kit,
       version: @version,
-      elixir: "~> 1.15",
+      elixir: "~> 1.16",
       start_permanent: Mix.env() == :prod,
       description: "A package for running the code generators from Live SAAS kit.",
       homepage_url: "https://livesaaskit.com/",
@@ -36,11 +36,8 @@ defmodule SaasKit.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:phoenix, ">= 1.7.0 and < 1.8.0"},
-      {:phoenix_live_view, ">= 0.18.0 and < 2.0.0"},
-      {:phoenix_html, ">= 3.1.0 and < 5.0.0"},
       {:jason, ">= 1.2.0"},
-      {:httpoison, ">= 1.8.0"},
+      {:req, ">= 0.5.0"},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false}
     ]
   end
