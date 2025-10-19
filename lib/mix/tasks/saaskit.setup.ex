@@ -26,7 +26,8 @@ defmodule Mix.Tasks.Saaskit.Setup do
     token = Application.get_env(:saas_kit, :boilerplate_token)
 
     Mix.shell().info("#{IO.ANSI.blue()}* Performing setup:#{IO.ANSI.reset()}")
-    url = "https://livesaaskit.com/api/boilerplate/install/#{token}/setup"
+    base_url = Application.get_env(:saas_kit, :base_url) || "https://livesaaskit.com"
+    url = "#{base_url}/api/boilerplate/install/#{token}/setup"
 
     case Req.get(url) do
       {:ok, %{body: %{"instructions" => instructions}}} ->

@@ -45,34 +45,17 @@ defmodule Mix.Tasks.Feature.Install do
     Application.ensure_all_started(:req)
 
     Mix.shell().info("#{IO.ANSI.blue()}* Installing feature:#{IO.ANSI.reset()} #{feature}")
-    url = "https://livesaaskit.com/api/boilerplate/install/#{token}/#{feature}"
+    base_url = Application.get_env(:saas_kit, :base_url) || "https://livesaaskit.com"
+    url = "#{base_url}/api/boilerplate/install/#{token}/#{feature}"
 
     case Req.get(url) do
       {:ok, %{body: %{"instructions" => instructions}}} ->
-        create_files(instructions, feature)
+        SaasKit.follow_instructions(instructions, feature)
 
       _ ->
         Mix.shell().error(
           "#{IO.ANSI.red()}* Failed to install feature:#{IO.ANSI.reset()} #{feature}"
         )
     end
-  end
-
-  defp create_files(instructions, feature) do
-    installed =
-      instructions
-      |> Enum.map(fn %{"filename" => filename, "template" => template} ->
-        File.mkdir_p!(Path.dirname(filename))
-        File.write!(filename, template)
-        filename
-      end)
-
-    Enum.each(installed, fn file ->
-      Mix.shell().info("#{IO.ANSI.green()}* Created file:#{IO.ANSI.reset()} #{file}")
-    end)
-
-    Mix.shell().info(
-      "#{IO.ANSI.green()}* Installed feature:#{IO.ANSI.reset()} #{feature} (#{length(installed)} files)"
-    )
   end
 end
