@@ -22,7 +22,7 @@ defmodule Mix.Tasks.Saaskit.Setup do
   end
 
   defp install_setup do
-    Application.ensure_all_started(:req)
+    Application.ensure_all_started([:req, :hex])
     token = Application.get_env(:saas_kit, :boilerplate_token)
 
     Mix.shell().info("#{IO.ANSI.blue()}* Performing setup:#{IO.ANSI.reset()}")
@@ -31,26 +31,10 @@ defmodule Mix.Tasks.Saaskit.Setup do
 
     case Req.get(url) do
       {:ok, %{body: %{"instructions" => instructions}}} ->
-        create_files(instructions)
+        SaasKit.follow_instructions(instructions, "initial_setup")
 
       _ ->
         Mix.shell().error("#{IO.ANSI.red()}* Failed to run setup#{IO.ANSI.reset()}")
     end
-  end
-
-  defp create_files(instructions) do
-    installed =
-      instructions
-      |> Enum.map(fn %{"filename" => filename, "template" => template} ->
-        File.mkdir_p!(Path.dirname(filename))
-        File.write!(filename, template)
-        filename
-      end)
-
-    Enum.each(installed, fn file ->
-      Mix.shell().info("#{IO.ANSI.green()}* Created file:#{IO.ANSI.reset()} #{file}")
-    end)
-
-    Mix.shell().info("#{IO.ANSI.green()}* Setup completed!#{IO.ANSI.reset()}")
   end
 end

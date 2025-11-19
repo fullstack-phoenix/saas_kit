@@ -42,7 +42,7 @@ defmodule Mix.Tasks.Saaskit.Feature.Install do
   end
 
   defp install_feature(token, feature) do
-    Application.ensure_all_started(:req)
+    Application.ensure_all_started([:req, :hex])
 
     Mix.shell().info("#{IO.ANSI.blue()}* Installing feature:#{IO.ANSI.reset()} #{feature}")
     base_url = Application.get_env(:saas_kit, :base_url) || "https://livesaaskit.com"

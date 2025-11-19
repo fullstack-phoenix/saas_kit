@@ -1,12 +1,11 @@
 defmodule SaasKit do
   @moduledoc false
 
-  @allowed_rules ~w(generate_file inject_before inject_after append prepend replace)
+  @allowed_rules ~w(mix_command generate_file inject_before inject_after append prepend replace wrap_up)
 
   def follow_instructions(instructions, feature) do
     instructions
     |> Enum.filter(fn %{"rule" => rule} -> rule in @allowed_rules end)
-    |> Enum.sort_by(fn %{"rule" => rule} -> if rule == "generate_file", do: -1, else: 0 end)
     |> Enum.reduce_while([], fn instruction, acc ->
       if follow_instruction(instruction, feature) == :ok do
         {:cont, acc}
@@ -184,6 +183,36 @@ defmodule SaasKit do
     end
   end
 
+  defp follow_instruction(%{"rule" => "mix_command", "mix_command" => "" <> template}, _) do
+    template = String.replace_prefix(template, "mix ", "")
+
+    Mix.shell().info("#{IO.ANSI.green()}* Run mix command:#{IO.ANSI.reset()} #{template}")
+    [cmd | args] = String.split(template, " ")
+
+    System.cmd("mix", ["deps.get"])
+    Mix.Task.run(cmd, args)
+
+    :ok
+  end
+
+  defp follow_instruction(%{"rule" => "wrap_up"}, feature) do
+    token = Application.get_env(:saas_kit, :boilerplate_token)
+    base_url = Application.get_env(:saas_kit, :base_url) || "https://livesaaskit.com"
+    url = "#{base_url}/api/boilerplate/installed/#{token}/#{feature}"
+
+    Req.post(url, json: %{})
+
+    System.cmd("mix", ["deps.get"])
+    System.cmd("mix", ["format"])
+
+    :ok
+  end
+
+  defp follow_instruction(%{"rule" => "error", "message" => "" <> message}, _) do
+    Mix.shell().error("#{IO.ANSI.red()} #{message} #{IO.ANSI.reset()}")
+    :ok
+  end
+
   defp follow_instruction(_instruction, _feature) do
     :ok
   end
@@ -199,7 +228,13 @@ defmodule SaasKit do
       id: Map.get(instruction, "id")
     }
 
-    case Req.post(url, json: params, connect_options: [timeout: 60_000]) do
+    case Req.post(
+           url,
+           json: params,
+           max_retries: 8,
+           retry_log_level: false,
+           connect_options: [timeout: 60_000]
+         ) do
       {:ok, %{body: %{"template" => "" <> template}}} ->
         {:ok, template}
 
