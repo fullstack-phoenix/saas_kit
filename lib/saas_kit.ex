@@ -65,6 +65,31 @@ defmodule SaasKit do
 
   defp follow_instruction(
          %{
+           "rule" => rule,
+           "filename" => filename,
+           "template" => "" <> template,
+           "target" => "" <> target
+         },
+         _feature
+       )
+       when rule in ~w(inject_before inject_after) do
+    if warn_if_file_is_missing(filename) && warn_if_file_has_content(filename, template) do
+      new_string = if rule == "inject_before", do: template <> target, else: target <> template
+
+      new_content =
+        File.read!(filename)
+        |> String.replace(target, new_string)
+
+      write_file!(filename, new_content)
+
+      Mix.shell().info("#{IO.ANSI.green()}* Updated file:#{IO.ANSI.reset()} #{filename}")
+    end
+
+    :ok
+  end
+
+  defp follow_instruction(
+         %{
            "rule" => "append",
            "filename" => filename,
            "template" => "" <> template
@@ -100,29 +125,6 @@ defmodule SaasKit do
       new_content =
         template
         |> Kernel.<>(existing_content)
-
-      write_file!(filename, new_content)
-
-      Mix.shell().info("#{IO.ANSI.green()}* Updated file:#{IO.ANSI.reset()} #{filename}")
-    end
-
-    :ok
-  end
-
-  defp follow_instruction(
-         %{
-           "rule" => "replace",
-           "smart" => false,
-           "filename" => filename,
-           "string_to_insert" => "" <> string_to_insert,
-           "string_to_replace" => "" <> string_to_replace
-         },
-         _feature
-       ) do
-    if warn_if_file_is_missing(filename) do
-      new_content =
-        File.read!(filename)
-        |> String.replace(string_to_replace, string_to_insert)
 
       write_file!(filename, new_content)
 
