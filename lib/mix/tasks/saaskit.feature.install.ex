@@ -3,19 +3,27 @@ defmodule Mix.Tasks.Saaskit.Feature.Install do
   Installs a SaaS Kit feature.
 
   Usage:
-    mix feature.install <feature_name>
-    mix feature.install <feature_name> <token>
+    mix saaskit.feature.install <feature_name>
+    mix saaskit.feature.install <feature_name> --token <token>
+    mix saaskit.feature.install <feature_name> --step <uuid>
   """
   use Mix.Task
 
   @impl Mix.Task
   def run([feature]) do
-    token = get_token()
-    install_feature(token, feature)
+    install_feature(feature)
   end
 
-  def run([feature, token]) when is_binary(token) do
-    install_feature(token, feature)
+  def run([feature | args]) do
+    opts =
+      args
+      |> OptionParser.parse(switches: [token: :string, step: :string])
+      |> case do
+        {opts, _, _} -> opts
+        _ -> []
+      end
+
+    install_feature(feature, opts)
   end
 
   def run(_) do
@@ -41,12 +49,19 @@ defmodule Mix.Tasks.Saaskit.Feature.Install do
     token
   end
 
-  defp install_feature(token, feature) do
+  defp install_feature(feature, opts \\ []) do
+    token = Keyword.get(opts, :token) || get_token()
     Application.ensure_all_started([:req, :hex])
 
     Mix.shell().info("#{IO.ANSI.blue()}* Installing feature:#{IO.ANSI.reset()} #{feature}")
     base_url = Application.get_env(:saas_kit, :base_url) || "https://livesaaskit.com"
     url = "#{base_url}/api/boilerplate/install/#{token}/#{feature}"
+
+    url =
+      case Keyword.get(opts, :step) do
+        nil -> url
+        step -> "#{url}?step=#{step}"
+      end
 
     case Req.get(url) do
       {:ok, %{body: %{"instructions" => instructions}}} ->

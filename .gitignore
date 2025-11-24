@@ -26,3 +26,5 @@ saas_kit-*.tar
 /tmp/
 
 .env
+
+.claude/

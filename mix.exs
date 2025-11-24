@@ -1,7 +1,7 @@
 defmodule SaasKit.MixProject do
   use Mix.Project
 
-  @version "2.6.1"
+  @version "2.6.2"
 
   def project do
     [
@@ -36,6 +36,7 @@ defmodule SaasKit.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
+      {:phoenix, ">= 1.8.0"},
       {:jason, ">= 1.2.0"},
       {:req, ">= 0.5.0"},
       {:mimic, "~> 1.7", only: :test},

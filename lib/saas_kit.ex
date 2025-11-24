@@ -10,8 +10,10 @@ defmodule SaasKit do
       if follow_instruction(instruction, feature) == :ok do
         {:cont, acc}
       else
+        step = Map.get(instruction, "id", "")
+
         Mix.shell().info(
-          "#{IO.ANSI.red()}There was an error. Run: mix feature.install #{feature}#{IO.ANSI.reset()}"
+          "#{IO.ANSI.red()}There was an error. Run: mix saaskit.feature.install #{feature} --step #{step}#{IO.ANSI.reset()}"
         )
 
         {:halt, acc}
@@ -27,12 +29,39 @@ defmodule SaasKit do
          },
          _feature
        ) do
-    if warn_if_file_exists(filename) do
-      write_file!(filename, template)
-      Mix.shell().info("#{IO.ANSI.green()}* Created file:#{IO.ANSI.reset()} #{filename}")
-    end
+    Mix.Generator.create_file(filename, template, force: true)
 
     :ok
+  end
+
+  defp follow_instruction(
+         %{
+           "rule" => rule,
+           "smart" => true,
+           "filename" => filename,
+           "template" => template
+         } = instruction,
+         feature
+       )
+       when rule in ~w(inject_before inject_after replace) do
+    with true <- warn_if_file_is_missing(filename),
+         true <- warn_if_file_has_content(filename, template),
+         {:ok, content} <- File.read(filename),
+         {:ok, updated_content} <-
+           get_updated_file(Map.put(instruction, "content", content), feature) do
+      write_file!(filename, updated_content)
+      Mix.shell().info("#{IO.ANSI.green()}* Updated file:#{IO.ANSI.reset()} #{filename}")
+    else
+      false ->
+        :ok
+
+      _ ->
+        Mix.shell().error(
+          "#{IO.ANSI.red()}* Failed to install file:#{IO.ANSI.reset()} #{filename}"
+        )
+
+        :error
+    end
   end
 
   defp follow_instruction(
@@ -69,12 +98,17 @@ defmodule SaasKit do
            "filename" => filename,
            "template" => "" <> template,
            "target" => "" <> target
-         },
+         } = instruction,
          _feature
        )
        when rule in ~w(inject_before inject_after) do
     if warn_if_file_is_missing(filename) && warn_if_file_has_content(filename, template) do
-      new_string = if rule == "inject_before", do: template <> target, else: target <> template
+      new_line = if Map.get(instruction, "new_line", true), do: "\n", else: ""
+
+      new_string =
+        if rule == "inject_before",
+          do: template <> new_line <> target,
+          else: target <> new_line <> template
 
       new_content =
         File.read!(filename)
@@ -101,6 +135,7 @@ defmodule SaasKit do
 
       new_content =
         existing_content
+        |> Kernel.<>("\n")
         |> Kernel.<>(template)
 
       write_file!(filename, new_content)
@@ -124,6 +159,7 @@ defmodule SaasKit do
 
       new_content =
         template
+        |> Kernel.<>("\n")
         |> Kernel.<>(existing_content)
 
       write_file!(filename, new_content)
@@ -154,35 +190,6 @@ defmodule SaasKit do
     end
 
     :ok
-  end
-
-  defp follow_instruction(
-         %{
-           "rule" => rule,
-           "filename" => filename,
-           "template" => template
-         } = instruction,
-         feature
-       )
-       when rule in ~w(inject_before inject_after replace) do
-    with true <- warn_if_file_is_missing(filename),
-         true <- warn_if_file_has_content(filename, template),
-         {:ok, content} <- File.read(filename),
-         {:ok, updated_content} <-
-           get_updated_file(Map.put(instruction, "content", content), feature) do
-      write_file!(filename, updated_content)
-      Mix.shell().info("#{IO.ANSI.green()}* Updated file:#{IO.ANSI.reset()} #{filename}")
-    else
-      false ->
-        :ok
-
-      _ ->
-        Mix.shell().error(
-          "#{IO.ANSI.red()}* Failed to install file:#{IO.ANSI.reset()} #{filename}"
-        )
-
-        :error
-    end
   end
 
   defp follow_instruction(%{"rule" => "mix_command", "mix_command" => "" <> template}, _) do
@@ -230,13 +237,16 @@ defmodule SaasKit do
       id: Map.get(instruction, "id")
     }
 
-    case Req.post(
-           url,
-           json: params,
-           max_retries: 8,
-           retry_log_level: false,
-           connect_options: [timeout: 60_000]
-         ) do
+    req =
+      Req.post(
+        url,
+        json: params,
+        max_retries: 8,
+        retry_log_level: false,
+        connect_options: [timeout: 60_000]
+      )
+
+    case req do
       {:ok, %{body: %{"template" => "" <> template}}} ->
         {:ok, template}
 
@@ -250,16 +260,6 @@ defmodule SaasKit do
 
     File.mkdir_p!(Path.dirname(filename))
     File.write!(filename, content)
-  end
-
-  defp warn_if_file_exists(filename) do
-    if File.exists?(filename) do
-      Mix.shell().info("#{IO.ANSI.yellow()}* file exists, skipping#{IO.ANSI.reset()} #{filename}")
-
-      false
-    else
-      true
-    end
   end
 
   defp warn_if_file_is_missing(filename) do
