@@ -99,27 +99,29 @@ defmodule SaasKit do
            "template" => "" <> template,
            "target" => "" <> target
          } = instruction,
-         _feature
+         feature
        )
-       when rule in ~w(inject_before inject_after) do
-    if warn_if_file_is_missing(filename) && warn_if_file_has_content(filename, template) do
-      new_line = if Map.get(instruction, "new_line", true), do: "\n", else: ""
+       when rule in ~w(inject_before inject_after) and target != "" do
+    with_smart_fallback(instruction, feature) do
+      if warn_if_file_is_missing(filename) && warn_if_file_has_content(filename, template) do
+        new_line = if Map.get(instruction, "new_line", true), do: "\n", else: ""
 
-      new_string =
-        if rule == "inject_before",
-          do: template <> new_line <> target,
-          else: target <> new_line <> template
+        new_string =
+          if rule == "inject_before",
+            do: template <> new_line <> target,
+            else: target <> new_line <> template
 
-      new_content =
-        File.read!(filename)
-        |> String.replace(target, new_string)
+        new_content =
+          File.read!(filename)
+          |> String.replace(target, new_string)
 
-      write_file!(filename, new_content)
+        write_file!(filename, new_content)
 
-      Mix.shell().info("#{IO.ANSI.green()}* Updated file:#{IO.ANSI.reset()} #{filename}")
+        Mix.shell().info("#{IO.ANSI.green()}* Updated file:#{IO.ANSI.reset()} #{filename}")
+      end
+
+      :ok
     end
-
-    :ok
   end
 
   defp follow_instruction(
@@ -285,6 +287,19 @@ defmodule SaasKit do
       false
     else
       _ -> true
+    end
+  end
+
+  defp with_smart_fallback(%{"filename" => filename, "target" => target} = instruction, feature,
+         do: block
+       ) do
+    with true <- File.exists?(filename),
+         existing_content <- File.read!(filename),
+         false <- String.contains?("#{existing_content}", "#{target}") do
+      Map.put(instruction, "smart", true)
+      |> follow_instruction(feature)
+    else
+      _ -> block
     end
   end
 end

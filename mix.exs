@@ -1,7 +1,7 @@
 defmodule SaasKit.MixProject do
   use Mix.Project
 
-  @version "2.6.2"
+  @version "2.6.3"
 
   def project do
     [
