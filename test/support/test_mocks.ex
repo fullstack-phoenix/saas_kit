@@ -15,35 +15,6 @@ defmodule SaasKit.TestMocks do
     end
   end
 
-  setup [
-    :setup_req,
-    :setup_mix_generator,
-    :setup_mix_task,
-    :setup_path,
-    :setup_file,
-    :setup_system
-  ]
-
-  def setup_req(_) do
-    req =
-      Req
-      |> stub(:get, fn _, _ ->
-        {:ok, %Req.Response{body: %{}}}
-      end)
-      |> stub(:get!, fn _, _ ->
-        %Req.Response{body: %{}}
-      end)
-      |> stub(:post, fn url, args ->
-        send(self(), {:req_post, url, args})
-        {:ok, %Req.Response{body: %{"template" => "updated content"}}}
-      end)
-      |> stub(:post!, fn _, _ ->
-        %Req.Response{body: %{}}
-      end)
-
-    [req: req]
-  end
-
   def setup_mix_generator(_) do
     mix_generator =
       Mix.Generator
@@ -59,56 +30,6 @@ defmodule SaasKit.TestMocks do
     [mix_generator: mix_generator]
   end
 
-  def setup_mix_task(_) do
-    mix_task =
-      Mix.Task
-      |> stub(:run, fn cmd, args ->
-        send(self(), {:mix_task_run, cmd, args})
-        :ok
-      end)
-
-    [mix_task: mix_task]
-  end
-
-  def setup_path(_) do
-    path =
-      Path
-      |> stub(:dirname, fn dirname -> dirname end)
-
-    [path: path]
-  end
-
-  def setup_file(_) do
-    file =
-      File
-      |> stub(:exists?, fn filename ->
-        # Return false for files that should be "missing"
-        !String.contains?(filename, "missing")
-      end)
-      |> stub(:read, fn filename ->
-        send(self(), {:file_read, filename})
-        {:ok, file_content()}
-      end)
-      |> stub(:read!, fn filename ->
-        send(self(), {:file_read, filename})
-        file_content()
-      end)
-      |> stub(:write, fn filename, content ->
-        send(self(), {:file_write, filename, content})
-        true
-      end)
-      |> stub(:write!, fn filename, content ->
-        send(self(), {:file_write!, filename, content})
-        true
-      end)
-      |> stub(:mkdir_p!, fn filename ->
-        send(self(), {:file_mkdir_p!, filename})
-        true
-      end)
-
-    [file_module: file]
-  end
-
   def setup_system(_) do
     system =
       System
@@ -118,15 +39,5 @@ defmodule SaasKit.TestMocks do
       end)
 
     [system: system]
-  end
-
-  defp file_content do
-    """
-    defmodule Sample do
-      def hello do
-        IO.puts("Hello, World!")
-      end
-    end
-    """
   end
 end

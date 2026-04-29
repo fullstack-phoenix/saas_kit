@@ -64,6 +64,35 @@ defmodule SaasKit do
     end
   end
 
+  # We will land here when trying to insert a dependency.
+  # We will check if thus is actually about that, otherwise move on.
+  defp follow_instruction(
+         %{
+           "rule" => rule,
+           "filename" => "mix.exs",
+           "template" => "" <> template
+         } = instruction,
+         feature
+       )
+       when rule in ~w(inject_before inject_after) and
+              not is_map_key(instruction, "not_insert_deps") do
+    if warn_if_file_is_missing("mix.exs") && warn_if_file_has_content("mix.exs", template) do
+      insert_deps? = Regex.match?(~r/\{:\w+,[^}]*\}/, template)
+
+      if insert_deps? do
+        new_content = SaasKit.Patcher.inject_dependency(template)
+
+        write_file!("mix.exs", new_content)
+
+        Mix.shell().info("#{IO.ANSI.green()}* Updated file:#{IO.ANSI.reset()} mix.exs")
+      else
+        instruction
+        |> Map.put("not_insert_deps", true)
+        |> follow_instruction(feature)
+      end
+    end
+  end
+
   defp follow_instruction(
          %{
            "rule" => "inject_before",
@@ -104,16 +133,10 @@ defmodule SaasKit do
        when rule in ~w(inject_before inject_after) and target != "" do
     with_smart_fallback(instruction, feature) do
       if warn_if_file_is_missing(filename) && warn_if_file_has_content(filename, template) do
-        new_line = if Map.get(instruction, "new_line", true), do: "\n", else: ""
-
-        new_string =
-          if rule == "inject_before",
-            do: template <> new_line <> target,
-            else: target <> new_line <> template
-
         new_content =
-          File.read!(filename)
-          |> String.replace(target, new_string)
+          if rule == "inject_before",
+            do: SaasKit.Patcher.inject_before(instruction),
+            else: SaasKit.Patcher.inject_after(instruction)
 
         write_file!(filename, new_content)
 
@@ -176,15 +199,13 @@ defmodule SaasKit do
          %{
            "rule" => "replace",
            "filename" => filename,
-           "template" => "" <> string_to_insert,
-           "target" => "" <> string_to_replace
-         },
+           "template" => "" <> _string_to_insert,
+           "target" => "" <> _string_to_replace
+         } = instruction,
          _feature
        ) do
     if warn_if_file_is_missing(filename) do
-      new_content =
-        File.read!(filename)
-        |> String.replace(string_to_replace, string_to_insert)
+      new_content = SaasKit.Patcher.replace(instruction)
 
       write_file!(filename, new_content)
 

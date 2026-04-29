@@ -1,7 +1,7 @@
 defmodule SaasKit.MixProject do
   use Mix.Project
 
-  @version "2.6.3"
+  @version "2.7.0"
 
   def project do
     [
@@ -39,6 +39,7 @@ defmodule SaasKit.MixProject do
       {:phoenix, ">= 1.8.0"},
       {:jason, ">= 1.2.0"},
       {:req, ">= 0.5.0"},
+      {:ex_ast, "~> 0.5"},
       {:mimic, "~> 1.7", only: :test},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false}
     ]
