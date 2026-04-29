@@ -46,7 +46,7 @@ mix phx.new my_app && cd my_app
 mix deps.get
 mix saaskit.status               # sanity-check config + API
 mix saaskit.setup                # run initial project setup
-mix saaskit.agent.feature.list   # see what's available
+mix saaskit.feature.list   # see what's available
 mix saaskit.feature.install auth # install a feature
 ```
 
@@ -56,8 +56,8 @@ All read-only tasks accept `--json` and emit a stable, versioned schema:
 
 ```bash
 mix saaskit.status --json
-mix saaskit.agent.feature.list --json
-mix saaskit.agent.feature.show auth --json
+mix saaskit.feature.list --json
+mix saaskit.feature.show auth --json
 mix saaskit.help --json
 ```
 
@@ -90,8 +90,8 @@ Failing JSON payloads are written to stdout and the task exits non-zero.
 | `mix saaskit.setup` | Run initial project setup (installs the `initial_setup` feature). |
 | `mix saaskit.feature.install <slug>` | Install one feature. `--token` to override, `--step <uuid>` to resume. |
 | `mix saaskit.plan.install <plan_id>` | Install every feature in a saved plan, in order. |
-| `mix saaskit.agent.feature.list` | List all features with installation status (`--filter`, `--json`). |
-| `mix saaskit.agent.feature.show <slug>` | Show full detail for a single feature (`--json`). |
+| `mix saaskit.feature.list` | List all features with installation status (`--filter`, `--json`). |
+| `mix saaskit.feature.show <slug>` | Show full detail for a single feature (`--json`). |
 
 ## Troubleshooting
 

@@ -1,11 +1,11 @@
-defmodule Mix.Tasks.Saaskit.Agent.Feature.List do
+defmodule Mix.Tasks.Saaskit.Feature.List do
   @moduledoc """
   Lists all available SaaS Kit features and their installation status.
 
   Usage:
-    mix saaskit.agent.feature.list
-    mix saaskit.agent.feature.list --filter "auth,billing"
-    mix saaskit.agent.feature.list --json
+    mix saaskit.feature.list
+    mix saaskit.feature.list --filter "auth,billing"
+    mix saaskit.feature.list --json
 
   Options:
     --filter  Comma-separated words to filter features by name, slug, or description.

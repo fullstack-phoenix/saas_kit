@@ -1,10 +1,10 @@
-defmodule Mix.Tasks.Saaskit.Agent.Feature.Show do
+defmodule Mix.Tasks.Saaskit.Feature.Show do
   @moduledoc """
   Shows full detail for a single SaaS Kit feature.
 
   Usage:
-    mix saaskit.agent.feature.show <slug>
-    mix saaskit.agent.feature.show <slug> --json
+    mix saaskit.feature.show <slug>
+    mix saaskit.feature.show <slug> --json
 
   JSON shape:
 
@@ -33,7 +33,7 @@ defmodule Mix.Tasks.Saaskit.Agent.Feature.Show do
 
     case positional do
       [slug | _] -> show(slug, opts)
-      _ -> Helpers.fail!(:usage, "Usage: mix saaskit.agent.feature.show <slug>", opts, 1)
+      _ -> Helpers.fail!(:usage, "Usage: mix saaskit.feature.show <slug>", opts, 1)
     end
   end
 
@@ -59,7 +59,7 @@ defmodule Mix.Tasks.Saaskit.Agent.Feature.Show do
           nil ->
             Helpers.fail!(
               :feature_not_found,
-              "Feature '#{slug}' does not exist. Run `mix saaskit.agent.feature.list` to see available features.",
+              "Feature '#{slug}' does not exist. Run `mix saaskit.feature.list` to see available features.",
               opts,
               1
             )

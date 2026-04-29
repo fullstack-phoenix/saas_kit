@@ -68,21 +68,21 @@ defmodule Mix.Tasks.Saaskit.Help do
       examples: ["mix saaskit.plan.install plan_abc123"]
     },
     %{
-      command: "mix saaskit.agent.feature.list",
+      command: "mix saaskit.feature.list",
       description:
         "List all available features with installation status. Supports --filter and --json.",
       examples: [
-        "mix saaskit.agent.feature.list",
-        "mix saaskit.agent.feature.list --filter \"auth,billing\"",
-        "mix saaskit.agent.feature.list --json"
+        "mix saaskit.feature.list",
+        "mix saaskit.feature.list --filter \"auth,billing\"",
+        "mix saaskit.feature.list --json"
       ]
     },
     %{
-      command: "mix saaskit.agent.feature.show <slug>",
+      command: "mix saaskit.feature.show <slug>",
       description: "Show full detail for a single feature.",
       examples: [
-        "mix saaskit.agent.feature.show auth",
-        "mix saaskit.agent.feature.show billing --json"
+        "mix saaskit.feature.show auth",
+        "mix saaskit.feature.show billing --json"
       ]
     }
   ]
@@ -137,7 +137,7 @@ defmodule Mix.Tasks.Saaskit.Help do
     info("  3. Put your token in config/config.exs (see above)")
     info("  4. mix saaskit.status          # sanity-check config + API")
     info("  5. mix saaskit.setup           # run initial setup")
-    info("  6. mix saaskit.agent.feature.list")
+    info("  6. mix saaskit.feature.list")
     info("  7. mix saaskit.feature.install <slug>")
     info("")
     info("#{@b}Tip for AI agents#{@r}  Most read-only tasks support #{@g}--json#{@r}. Start with:")
