@@ -31,10 +31,14 @@ defmodule Mix.Tasks.Saaskit.Setup do
 
     case Req.get(url) do
       {:ok, %{body: %{"instructions" => instructions}}} ->
-        SaasKit.follow_instructions(instructions, "initial_setup")
+        case SaasKit.follow_instructions(instructions, "initial_setup") do
+          :ok -> :ok
+          {:error, _step} -> System.halt(1)
+        end
 
       _ ->
         Mix.shell().error("#{IO.ANSI.red()}* Failed to run setup#{IO.ANSI.reset()}")
+        System.halt(1)
     end
   end
 end

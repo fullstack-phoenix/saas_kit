@@ -49,18 +49,26 @@ defmodule Mix.Tasks.Saaskit.Plan.Install do
 
     case Req.get(url) do
       {:ok, %{body: %{"steps" => steps}}} ->
-        Enum.each(steps, fn step ->
+        Enum.reduce_while(steps, :ok, fn step, :ok ->
           # if Mix.shell().yes?("Install #{IO.ANSI.yellow()}#{step}#{IO.ANSI.reset()}?") do
           #   Mix.Task.run("saaskit.feature.install", [step, token])
           # else
           #   Mix.shell().info("#{IO.ANSI.yellow()}* Skipping step:#{IO.ANSI.reset()} #{step}")
           # end
 
-          install_feature(token, step)
+          case install_feature(token, step) do
+            :ok -> {:cont, :ok}
+            {:error, _reason} = error -> {:halt, error}
+          end
         end)
+        |> case do
+          :ok -> :ok
+          {:error, _reason} -> System.halt(1)
+        end
 
       _ ->
         Mix.shell().error("#{IO.ANSI.red()}* Failed to install plan:#{IO.ANSI.reset()} #{plan}")
+        System.halt(1)
     end
   end
 
@@ -77,6 +85,8 @@ defmodule Mix.Tasks.Saaskit.Plan.Install do
         Mix.shell().error(
           "#{IO.ANSI.red()}* Failed to install feature:#{IO.ANSI.reset()} #{feature}"
         )
+
+        {:error, :request_failed}
     end
   end
 end

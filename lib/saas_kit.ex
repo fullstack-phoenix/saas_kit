@@ -6,9 +6,9 @@ defmodule SaasKit do
   def follow_instructions(instructions, feature) do
     instructions
     |> Enum.filter(fn %{"rule" => rule} -> rule in @allowed_rules end)
-    |> Enum.reduce_while([], fn instruction, acc ->
+    |> Enum.reduce_while(:ok, fn instruction, :ok ->
       if follow_instruction(instruction, feature) == :ok do
-        {:cont, acc}
+        {:cont, :ok}
       else
         step = Map.get(instruction, "id", "")
 
@@ -16,7 +16,7 @@ defmodule SaasKit do
           "#{IO.ANSI.red()}There was an error. Run: mix saaskit.feature.install #{feature} --step #{step}#{IO.ANSI.reset()}"
         )
 
-        {:halt, acc}
+        {:halt, {:error, step}}
       end
     end)
   end
@@ -91,6 +91,8 @@ defmodule SaasKit do
         |> follow_instruction(feature)
       end
     end
+
+    :ok
   end
 
   defp follow_instruction(

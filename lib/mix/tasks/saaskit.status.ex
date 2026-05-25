@@ -93,9 +93,14 @@ defmodule Mix.Tasks.Saaskit.Status do
 
   defp next_command(features) do
     cond do
-      Enum.all?(features, &(!&1["installed"])) -> "mix saaskit.setup"
-      first = Enum.find(features, &(!&1["installed"])) -> "mix saaskit.feature.install #{first["slug"]}"
-      true -> nil
+      Enum.all?(features, &(!&1["installed"])) ->
+        "mix saaskit.setup"
+
+      first = Enum.find(features, &(!&1["installed"])) ->
+        "mix saaskit.feature.install #{first["slug"]}"
+
+      true ->
+        nil
     end
   end
 
@@ -116,7 +121,10 @@ defmodule Mix.Tasks.Saaskit.Status do
     Mix.shell().info("#{IO.ANSI.green()}✓ Configured#{IO.ANSI.reset()}")
     Mix.shell().info("")
     Mix.shell().info("  #{IO.ANSI.blue()}App:#{IO.ANSI.reset()}      #{app.name} (#{app.slug})")
-    Mix.shell().info("  #{IO.ANSI.blue()}Features:#{IO.ANSI.reset()} #{f.installed} / #{f.total} installed (#{f.pending} pending)")
+
+    Mix.shell().info(
+      "  #{IO.ANSI.blue()}Features:#{IO.ANSI.reset()} #{f.installed} / #{f.total} installed (#{f.pending} pending)"
+    )
 
     if next do
       Mix.shell().info("")

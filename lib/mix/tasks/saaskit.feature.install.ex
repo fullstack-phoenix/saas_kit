@@ -65,12 +65,17 @@ defmodule Mix.Tasks.Saaskit.Feature.Install do
 
     case Req.get(url) do
       {:ok, %{body: %{"instructions" => instructions}}} ->
-        SaasKit.follow_instructions(instructions, feature)
+        case SaasKit.follow_instructions(instructions, feature) do
+          :ok -> :ok
+          {:error, _step} -> System.halt(1)
+        end
 
       _ ->
         Mix.shell().error(
           "#{IO.ANSI.red()}* Failed to install feature:#{IO.ANSI.reset()} #{feature}"
         )
+
+        System.halt(1)
     end
   end
 end

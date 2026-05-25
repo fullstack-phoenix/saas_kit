@@ -108,9 +108,7 @@ defmodule Mix.Tasks.Saaskit.Feature.List do
   end
 
   defp print_human(%{app: app, features: features}) do
-    Mix.shell().info(
-      "#{IO.ANSI.blue()}* App:#{IO.ANSI.reset()} #{app.name} (#{app.slug})"
-    )
+    Mix.shell().info("#{IO.ANSI.blue()}* App:#{IO.ANSI.reset()} #{app.name} (#{app.slug})")
 
     Enum.each(features, fn f ->
       status =
@@ -118,7 +116,11 @@ defmodule Mix.Tasks.Saaskit.Feature.List do
           do: "#{IO.ANSI.green()}[installed]#{IO.ANSI.reset()}",
           else: "[ ]        "
 
-      desc = if f.public_description && f.public_description != "", do: " — #{f.public_description}", else: ""
+      desc =
+        if f.public_description && f.public_description != "",
+          do: " — #{f.public_description}",
+          else: ""
+
       Mix.shell().info("  #{status} #{f.slug}#{desc}")
     end)
   end

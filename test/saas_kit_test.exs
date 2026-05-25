@@ -48,7 +48,7 @@ defmodule SaasKitTest do
         }
       ]
 
-      assert [] = SaasKit.follow_instructions(instructions, "demo_feature")
+      assert :ok = SaasKit.follow_instructions(instructions, "demo_feature")
 
       assert_receive {:mix_generator, [filename: ^filename, template: ^template]}
     end
@@ -80,7 +80,7 @@ defmodule SaasKitTest do
         end
         """
 
-      assert [] = SaasKit.follow_instructions(instructions, "demo_feature")
+      assert :ok = SaasKit.follow_instructions(instructions, "demo_feature")
 
       assert File.read!(filename) == expected_content
       assert_receive {:mix_shell, :info, [message]}
@@ -101,7 +101,7 @@ defmodule SaasKitTest do
         }
       ]
 
-      assert [] = SaasKit.follow_instructions(instructions, "demo_feature")
+      assert :ok = SaasKit.follow_instructions(instructions, "demo_feature")
 
       content = File.read!("mix.exs")
 
@@ -134,7 +134,7 @@ defmodule SaasKitTest do
         }
       ]
 
-      assert [] = SaasKit.follow_instructions(instructions, "demo_feature")
+      assert :ok = SaasKit.follow_instructions(instructions, "demo_feature")
 
       content = File.read!("mix.exs")
 
@@ -164,7 +164,7 @@ defmodule SaasKitTest do
         }
       ]
 
-      assert [] = SaasKit.follow_instructions(instructions, "demo_feature")
+      assert :ok = SaasKit.follow_instructions(instructions, "demo_feature")
 
       content = File.read!("mix.exs")
       assert content =~ "# project config"
@@ -192,7 +192,7 @@ defmodule SaasKitTest do
         }
       ]
 
-      assert [] = SaasKit.follow_instructions(instructions, "demo_feature")
+      assert :ok = SaasKit.follow_instructions(instructions, "demo_feature")
 
       content = File.read!(filename)
       assert content =~ "IO.inspect(:before)"
@@ -217,7 +217,7 @@ defmodule SaasKitTest do
         }
       ]
 
-      assert [] = SaasKit.follow_instructions(instructions, "demo_feature")
+      assert :ok = SaasKit.follow_instructions(instructions, "demo_feature")
 
       content = File.read!(filename)
       assert content =~ target
@@ -241,7 +241,7 @@ defmodule SaasKitTest do
         }
       ]
 
-      assert [] = SaasKit.follow_instructions(instructions, "demo_feature")
+      assert :ok = SaasKit.follow_instructions(instructions, "demo_feature")
 
       refute File.exists?(filename)
     end
@@ -274,7 +274,7 @@ defmodule SaasKitTest do
         .env
         """
 
-      assert [] = SaasKit.follow_instructions(instructions, "demo_feature")
+      assert :ok = SaasKit.follow_instructions(instructions, "demo_feature")
 
       assert File.read!(filename) == expected_content
       assert_receive {:mix_shell, :info, [message]}
@@ -294,7 +294,7 @@ defmodule SaasKitTest do
         }
       ]
 
-      assert [] = SaasKit.follow_instructions(instructions, "demo_feature")
+      assert :ok = SaasKit.follow_instructions(instructions, "demo_feature")
 
       assert File.read!(filename) == original_content
     end
@@ -325,7 +325,7 @@ defmodule SaasKitTest do
         end
         """
 
-      assert [] = SaasKit.follow_instructions(instructions, "demo_feature")
+      assert :ok = SaasKit.follow_instructions(instructions, "demo_feature")
 
       assert File.read!(filename) == expected_content
       assert_receive {:mix_shell, :info, [message]}
@@ -345,7 +345,7 @@ defmodule SaasKitTest do
         }
       ]
 
-      assert [] = SaasKit.follow_instructions(instructions, "demo_feature")
+      assert :ok = SaasKit.follow_instructions(instructions, "demo_feature")
 
       assert File.read!(filename) == original_content
     end
@@ -376,7 +376,7 @@ defmodule SaasKitTest do
         end
         """
 
-      assert [] = SaasKit.follow_instructions(instructions, "demo_feature")
+      assert :ok = SaasKit.follow_instructions(instructions, "demo_feature")
 
       assert File.read!(filename) == expected_content
       assert_receive {:mix_shell, :info, [message]}
@@ -397,7 +397,7 @@ defmodule SaasKitTest do
         }
       ]
 
-      assert [] = SaasKit.follow_instructions(instructions, "demo_feature")
+      assert :ok = SaasKit.follow_instructions(instructions, "demo_feature")
 
       refute File.exists?(filename)
     end
@@ -425,7 +425,7 @@ defmodule SaasKitTest do
         }
       ]
 
-      assert [] = SaasKit.follow_instructions(instructions, "demo_feature")
+      assert :ok = SaasKit.follow_instructions(instructions, "demo_feature")
 
       assert_receive {:system_cmd, "mix", ["deps.get"]}
       assert_receive {:mix_task_run, []}
@@ -441,7 +441,7 @@ defmodule SaasKitTest do
         }
       ]
 
-      assert [] = SaasKit.follow_instructions(instructions, "demo_feature")
+      assert :ok = SaasKit.follow_instructions(instructions, "demo_feature")
 
       # First call is always deps.get
       assert_receive {:system_cmd, "mix", ["deps.get"]}
@@ -471,7 +471,7 @@ defmodule SaasKitTest do
         }
       ]
 
-      assert [] = SaasKit.follow_instructions(instructions, "demo_feature")
+      assert :ok = SaasKit.follow_instructions(instructions, "demo_feature")
 
       assert_receive {:http_request, "POST", path, request}
       assert path == "/api/boilerplate/patch_file/test-token"
@@ -486,6 +486,34 @@ defmodule SaasKitTest do
                "defmodule Sample do\n  def hello do\n    IO.puts(\"Hello, World!\")\n  end\nend\n"
 
       assert File.read!(filename) == "updated content\n"
+    end
+
+    test "returns an error when smart patching fails" do
+      filename = "lib/sample.ex"
+      template = "def hello, do: :world"
+      write_sample_file!(filename)
+      base_url = start_http_server(%{"error" => "could not patch"})
+
+      Application.put_env(:saas_kit, :base_url, base_url)
+      Application.put_env(:saas_kit, :boilerplate_token, "test-token")
+
+      instructions = [
+        %{
+          "id" => "step-123",
+          "rule" => "inject_after",
+          "smart" => true,
+          "filename" => filename,
+          "template" => template
+        }
+      ]
+
+      assert {:error, "step-123"} = SaasKit.follow_instructions(instructions, "demo_feature")
+
+      assert_receive {:mix_shell, :error, [message]}
+      assert message =~ "* Failed to install file:"
+
+      assert_receive {:mix_shell, :info, [message]}
+      assert message =~ "mix saaskit.feature.install demo_feature --step step-123"
     end
   end
 
@@ -504,7 +532,7 @@ defmodule SaasKitTest do
         }
       ]
 
-      assert [] = SaasKit.follow_instructions(instructions, "demo_feature")
+      assert :ok = SaasKit.follow_instructions(instructions, "demo_feature")
 
       assert_receive {:http_request, "POST", "/api/boilerplate/installed/test-token/demo_feature",
                       _}
@@ -527,7 +555,7 @@ defmodule SaasKitTest do
         }
       ]
 
-      assert [] = SaasKit.follow_instructions(instructions, "demo_feature")
+      assert :ok = SaasKit.follow_instructions(instructions, "demo_feature")
 
       refute File.exists?("test.ex")
     end

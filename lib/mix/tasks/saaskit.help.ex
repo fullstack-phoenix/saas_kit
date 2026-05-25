@@ -140,7 +140,11 @@ defmodule Mix.Tasks.Saaskit.Help do
     info("  6. mix saaskit.feature.list")
     info("  7. mix saaskit.feature.install <slug>")
     info("")
-    info("#{@b}Tip for AI agents#{@r}  Most read-only tasks support #{@g}--json#{@r}. Start with:")
+
+    info(
+      "#{@b}Tip for AI agents#{@r}  Most read-only tasks support #{@g}--json#{@r}. Start with:"
+    )
+
     info("  mix saaskit.status --json")
     info("")
   end
