@@ -1,22 +1,34 @@
 defmodule SaasKit do
   @moduledoc false
 
-  @allowed_rules ~w(mix_command generate_file inject_before inject_after append prepend replace wrap_up)
+  @allowed_rules ~w(error mix_command generate_file inject_before inject_after append prepend replace wrap_up)
 
-  def follow_instructions(instructions, feature) do
+  def follow_instructions(instructions, feature, opts \\ []) do
+    decisions = Keyword.get(opts, :decisions, %{})
+    token = Keyword.get(opts, :token, Application.get_env(:saas_kit, :boilerplate_token))
+
     instructions
     |> Enum.filter(fn %{"rule" => rule} -> rule in @allowed_rules end)
     |> Enum.reduce_while(:ok, fn instruction, :ok ->
-      if follow_instruction(instruction, feature) == :ok do
-        {:cont, :ok}
-      else
-        step = Map.get(instruction, "id", "")
+      instruction =
+        instruction
+        |> Map.put("_saaskit_decisions", decisions)
+        |> Map.put("_saaskit_token", token)
 
-        Mix.shell().info(
-          "#{IO.ANSI.red()}There was an error. Run: mix saaskit.feature.install #{feature} --step #{step}#{IO.ANSI.reset()}"
-        )
+      case follow_instruction(instruction, feature) do
+        :ok ->
+          {:cont, :ok}
 
-        {:halt, {:error, step}}
+        :error ->
+          step = Map.get(instruction, "id", "")
+
+          unless instruction["rule"] == "error" do
+            Mix.shell().info(
+              "#{IO.ANSI.red()}There was an error. Run: mix saaskit.feature.install #{feature} --step #{step}#{IO.ANSI.reset()}"
+            )
+          end
+
+          {:halt, {:error, step}}
       end
     end)
   end
@@ -229,12 +241,13 @@ defmodule SaasKit do
     :ok
   end
 
-  defp follow_instruction(%{"rule" => "wrap_up"}, feature) do
-    token = Application.get_env(:saas_kit, :boilerplate_token)
+  defp follow_instruction(%{"rule" => "wrap_up"} = instruction, feature) do
+    token = Map.get(instruction, "_saaskit_token")
     base_url = Application.get_env(:saas_kit, :base_url) || "https://livesaaskit.com"
     url = "#{base_url}/api/boilerplate/installed/#{token}/#{feature}"
+    decisions = Map.get(instruction, "_saaskit_decisions", %{})
 
-    Req.post(url, json: %{})
+    Req.post(url, json: %{"decisions" => decisions})
 
     System.cmd("mix", ["deps.get"])
     System.cmd("mix", ["format"])
@@ -244,7 +257,7 @@ defmodule SaasKit do
 
   defp follow_instruction(%{"rule" => "error", "message" => "" <> message}, _) do
     Mix.shell().error("#{IO.ANSI.red()} #{message} #{IO.ANSI.reset()}")
-    :ok
+    :error
   end
 
   defp follow_instruction(_instruction, _feature) do
@@ -252,7 +265,9 @@ defmodule SaasKit do
   end
 
   defp get_updated_file(instruction, feature) do
-    token = Application.get_env(:saas_kit, :boilerplate_token)
+    token =
+      Map.get(instruction, "_saaskit_token") || Application.get_env(:saas_kit, :boilerplate_token)
+
     base_url = Application.get_env(:saas_kit, :base_url) || "https://livesaaskit.com"
     url = "#{base_url}/api/boilerplate/patch_file/#{token}"
 

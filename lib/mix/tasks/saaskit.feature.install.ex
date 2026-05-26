@@ -6,8 +6,12 @@ defmodule Mix.Tasks.Saaskit.Feature.Install do
     mix saaskit.feature.install <feature_name>
     mix saaskit.feature.install <feature_name> --token <token>
     mix saaskit.feature.install <feature_name> --step <uuid>
+    mix saaskit.feature.install <feature_name> --decision provider=stripe_subscription
   """
   use Mix.Task
+
+  alias SaasKit.API
+  alias SaasKit.Decisions
 
   @impl Mix.Task
   def run([feature]) do
@@ -17,7 +21,7 @@ defmodule Mix.Tasks.Saaskit.Feature.Install do
   def run([feature | args]) do
     opts =
       args
-      |> OptionParser.parse(switches: [token: :string, step: :string])
+      |> OptionParser.parse(switches: [token: :string, step: :string, decision: :string])
       |> case do
         {opts, _, _} -> opts
         _ -> []
@@ -54,28 +58,39 @@ defmodule Mix.Tasks.Saaskit.Feature.Install do
     Application.ensure_all_started([:req, :hex])
 
     Mix.shell().info("#{IO.ANSI.blue()}* Installing feature:#{IO.ANSI.reset()} #{feature}")
-    base_url = Application.get_env(:saas_kit, :base_url) || "https://livesaaskit.com"
-    url = "#{base_url}/api/boilerplate/install/#{token}/#{feature}"
+    supplied_decisions = opts |> Keyword.get_values(:decision) |> Decisions.parse_args!()
 
-    url =
-      case Keyword.get(opts, :step) do
-        nil -> url
-        step -> "#{url}?step=#{step}"
+    with {:ok, _boilerplate, features} <- API.fetch_features(token) do
+      feature_metadata =
+        Enum.find(features, &(&1["slug"] == feature)) ||
+          %{"slug" => feature, "decisions" => []}
+
+      decisions = Decisions.resolve(feature_metadata, supplied_decisions)
+      base_url = Application.get_env(:saas_kit, :base_url) || "https://livesaaskit.com"
+      url = "#{base_url}/api/boilerplate/install/#{token}/#{feature}"
+      url = Decisions.install_url(url, Keyword.get(opts, :step), decisions)
+
+      case Req.get(url) do
+        {:ok, %{body: %{"instructions" => instructions}}} ->
+          case SaasKit.follow_instructions(instructions, feature,
+                 decisions: decisions,
+                 token: token
+               ) do
+            :ok -> :ok
+            {:error, _step} -> System.halt(1)
+          end
+
+        _ ->
+          fail_install(feature)
       end
-
-    case Req.get(url) do
-      {:ok, %{body: %{"instructions" => instructions}}} ->
-        case SaasKit.follow_instructions(instructions, feature) do
-          :ok -> :ok
-          {:error, _step} -> System.halt(1)
-        end
-
-      _ ->
-        Mix.shell().error(
-          "#{IO.ANSI.red()}* Failed to install feature:#{IO.ANSI.reset()} #{feature}"
-        )
-
-        System.halt(1)
+    else
+      _failure ->
+        fail_install(feature)
     end
+  end
+
+  defp fail_install(feature) do
+    Mix.shell().error("#{IO.ANSI.red()}* Failed to install feature:#{IO.ANSI.reset()} #{feature}")
+    System.halt(1)
   end
 end

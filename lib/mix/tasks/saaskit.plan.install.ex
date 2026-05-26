@@ -7,6 +7,9 @@ defmodule Mix.Tasks.Saaskit.Plan.Install do
   """
   use Mix.Task
 
+  alias SaasKit.API
+  alias SaasKit.Decisions
+
   @impl Mix.Task
   def run([plan]) do
     token = get_token()
@@ -49,6 +52,12 @@ defmodule Mix.Tasks.Saaskit.Plan.Install do
 
     case Req.get(url) do
       {:ok, %{body: %{"steps" => steps}}} ->
+        features =
+          case API.fetch_features(token) do
+            {:ok, _boilerplate, features} -> features
+            _error -> []
+          end
+
         Enum.reduce_while(steps, :ok, fn step, :ok ->
           # if Mix.shell().yes?("Install #{IO.ANSI.yellow()}#{step}#{IO.ANSI.reset()}?") do
           #   Mix.Task.run("saaskit.feature.install", [step, token])
@@ -56,7 +65,7 @@ defmodule Mix.Tasks.Saaskit.Plan.Install do
           #   Mix.shell().info("#{IO.ANSI.yellow()}* Skipping step:#{IO.ANSI.reset()} #{step}")
           # end
 
-          case install_feature(token, step) do
+          case install_feature(token, step, features) do
             :ok -> {:cont, :ok}
             {:error, _reason} = error -> {:halt, error}
           end
@@ -72,14 +81,17 @@ defmodule Mix.Tasks.Saaskit.Plan.Install do
     end
   end
 
-  defp install_feature(token, feature) do
+  defp install_feature(token, feature, features) do
     Mix.shell().info("#{IO.ANSI.blue()}* Installing feature:#{IO.ANSI.reset()} #{feature}")
     base_url = Application.get_env(:saas_kit, :base_url) || "https://livesaaskit.com"
     url = "#{base_url}/api/boilerplate/install/#{token}/#{feature}"
+    metadata = Enum.find(features, &(&1["slug"] == feature))
+    decisions = Decisions.resolve(metadata)
+    url = Decisions.install_url(url, nil, decisions)
 
     case Req.get(url) do
       {:ok, %{body: %{"instructions" => instructions}}} ->
-        SaasKit.follow_instructions(instructions, feature)
+        SaasKit.follow_instructions(instructions, feature, decisions: decisions, token: token)
 
       _ ->
         Mix.shell().error(

@@ -535,10 +535,60 @@ defmodule SaasKitTest do
       assert :ok = SaasKit.follow_instructions(instructions, "demo_feature")
 
       assert_receive {:http_request, "POST", "/api/boilerplate/installed/test-token/demo_feature",
-                      _}
+                      request}
+
+      assert request |> request_body() |> Jason.decode!() == %{"decisions" => %{}}
 
       assert_receive {:system_cmd, "mix", ["deps.get"]}
       assert_receive {:system_cmd, "mix", ["format"]}
+    end
+
+    test "sends selected decision values in the completion callback" do
+      base_url = start_http_server(%{})
+
+      Application.put_env(:saas_kit, :base_url, base_url)
+      Application.put_env(:saas_kit, :boilerplate_token, "test-token")
+
+      instructions = [%{"rule" => "wrap_up"}]
+
+      assert :ok =
+               SaasKit.follow_instructions(instructions, "payments",
+                 decisions: %{"provider" => "stripe_subscription"}
+               )
+
+      assert_receive {:http_request, "POST", "/api/boilerplate/installed/test-token/payments",
+                      request}
+
+      assert request |> request_body() |> Jason.decode!() == %{
+               "decisions" => %{"provider" => "stripe_subscription"}
+             }
+    end
+
+    test "uses the effective token supplied by an install command" do
+      base_url = start_http_server(%{})
+
+      Application.put_env(:saas_kit, :base_url, base_url)
+      Application.put_env(:saas_kit, :boilerplate_token, "configured-token")
+
+      assert :ok =
+               SaasKit.follow_instructions([%{"rule" => "wrap_up"}], "payments",
+                 token: "cli-token"
+               )
+
+      assert_receive {:http_request, "POST", "/api/boilerplate/installed/cli-token/payments",
+                      _request}
+    end
+  end
+
+  describe "error instructions" do
+    test "halts an install when the server returns a decision error" do
+      instructions = [
+        %{"rule" => "error", "message" => "Decision 'provider' is required"}
+      ]
+
+      assert {:error, ""} = SaasKit.follow_instructions(instructions, "payments")
+      assert_receive {:mix_shell, :error, [message]}
+      assert message =~ "Decision 'provider' is required"
     end
   end
 

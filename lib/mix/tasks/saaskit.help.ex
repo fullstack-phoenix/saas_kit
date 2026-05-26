@@ -50,8 +50,9 @@ defmodule Mix.Tasks.Saaskit.Help do
     },
     %{
       command: "mix saaskit.setup",
-      description: "Run the initial project setup (installs the initial_setup feature).",
-      examples: ["mix saaskit.setup"]
+      description:
+        "Run initial setup, write .saaskit.yml, and optionally install agent guidance.",
+      examples: ["mix saaskit.setup", "mix saaskit.setup --agent-skills"]
     },
     %{
       command: "mix saaskit.feature.install <feature>",
@@ -59,7 +60,8 @@ defmodule Mix.Tasks.Saaskit.Help do
       examples: [
         "mix saaskit.feature.install auth",
         "mix saaskit.feature.install billing --token <token>",
-        "mix saaskit.feature.install auth --step <uuid>  # resume from step"
+        "mix saaskit.feature.install auth --step <uuid>  # resume from step",
+        "mix saaskit.feature.install payments --decision provider=stripe_subscription"
       ]
     },
     %{

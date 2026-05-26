@@ -17,6 +17,7 @@ defmodule Mix.Tasks.Saaskit.Feature.Show do
           "public_description": "...",
           "packages": ["bcrypt_elixir"],
           "dependencies": [],
+          "decisions": [],
           "installed": false
         }
       }
@@ -84,6 +85,7 @@ defmodule Mix.Tasks.Saaskit.Feature.Show do
       public_description: feature["public_description"],
       packages: feature["packages"] || [],
       dependencies: feature["dependencies"] || [],
+      decisions: feature["decisions"] || [],
       installed: feature["installed"] == true
     }
   end
@@ -107,6 +109,15 @@ defmodule Mix.Tasks.Saaskit.Feature.Show do
 
     Mix.shell().info("  #{IO.ANSI.blue()}Packages:#{IO.ANSI.reset()}     #{packages}")
     Mix.shell().info("  #{IO.ANSI.blue()}Dependencies:#{IO.ANSI.reset()} #{deps}")
+
+    Enum.each(f.decisions, fn decision ->
+      Mix.shell().info("")
+      Mix.shell().info("  #{IO.ANSI.blue()}Choice:#{IO.ANSI.reset()} #{decision["question"]}")
+
+      Enum.each(decision["options"] || [], fn option ->
+        Mix.shell().info("    - #{option["name"] || option["slug"]} (#{option["slug"]})")
+      end)
+    end)
 
     unless f.installed do
       Mix.shell().info("")

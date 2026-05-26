@@ -26,9 +26,9 @@ defmodule SaasKit.API do
     * `{:error, :not_found}` when the token does not resolve
     * `{:error, :api_unreachable}` on network / non-200 failure
   """
-  def fetch_features do
+  def fetch_features(token \\ token()) do
     Application.ensure_all_started([:req, :hex])
-    url = "#{base_url()}/api/boilerplate/features/#{token()}"
+    url = "#{base_url()}/api/boilerplate/features/#{token}"
 
     case Req.get(url) do
       {:ok, %{status: 200, body: %{"boilerplate" => bp, "features" => features}}} ->
