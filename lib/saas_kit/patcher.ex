@@ -58,17 +58,31 @@ defmodule SaasKit.Patcher do
       ~r/\{:\w+,[^}]*\}/
       |> Regex.scan(deps_string)
       |> List.flatten()
+      |> Enum.reject(&dependency_present?(source, &1))
 
-    injection =
-      new_deps
-      |> Enum.map(&"      #{&1}")
-      |> Enum.join(",\n")
+    case new_deps do
+      [] ->
+        source
 
-    Regex.replace(
-      ~r/(\{:\w+,[^}]*\})(\s*\])/,
-      source,
-      "\\1,\n#{injection}\\2"
-    )
+      _ ->
+        injection =
+          new_deps
+          |> Enum.map(&"      #{&1}")
+          |> Enum.join(",\n")
+
+        Regex.replace(
+          ~r/(\{:\w+,[^}]*\})(\s*\])/,
+          source,
+          "\\1,\n#{injection}\\2"
+        )
+    end
+  end
+
+  defp dependency_present?(source, dep) do
+    case Regex.run(~r/\{:(\w+),/, dep) do
+      [_, package_name] -> String.contains?(source, ":#{package_name},")
+      _ -> false
+    end
   end
 
   defp string_inject_before(source, template, target, new_line) do

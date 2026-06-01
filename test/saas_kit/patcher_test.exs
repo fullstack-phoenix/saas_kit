@@ -147,6 +147,81 @@ defmodule SaasKit.PatcherTest do
       assert result =~ "def application do"
       assert result =~ "extra_applications: [:logger]"
     end
+
+    test "skips a dependency that is already present (same version)" do
+      write_file!("mix.exs", mix_project())
+
+      result = Patcher.inject_dependency(~s|{:phoenix, "~> 1.8"}|)
+
+      assert result == mix_project()
+    end
+
+    test "skips a dependency that is already present regardless of version" do
+      write_file!("mix.exs", mix_project())
+
+      result = Patcher.inject_dependency(~s|{:phoenix, "~> 2.0"}|)
+
+      assert result == mix_project()
+      refute result =~ ~s|{:phoenix, "~> 2.0"}|
+    end
+
+    test "skips a dependency that is already present even with extra options" do
+      write_file!("mix.exs", mix_project())
+
+      result =
+        Patcher.inject_dependency(~s|{:jason, "~> 9.9", only: :dev, runtime: false}|)
+
+      assert result == mix_project()
+    end
+
+    test "does not confuse a prefix match like phoenix vs phoenix_live_view" do
+      mix =
+        String.replace(
+          mix_project(),
+          ~s|{:phoenix, "~> 1.8"},|,
+          ~s|{:phoenix_live_view, "~> 1.0"},|
+        )
+
+      write_file!("mix.exs", mix)
+
+      result = Patcher.inject_dependency(~s|{:phoenix, "~> 1.8"}|)
+
+      assert result =~ ~s|{:phoenix_live_view, "~> 1.0"},|
+      assert result =~ ~s|{:phoenix, "~> 1.8"}|
+    end
+
+    test "adds new deps and skips existing ones when mixed" do
+      write_file!("mix.exs", mix_project())
+
+      result =
+        Patcher.inject_dependency("""
+        {:phoenix, "~> 2.0"}
+        {:req, "~> 0.5"}
+        {:jason, "~> 9.9"}
+        {:ex_doc, ">= 0.0.0", only: :dev, runtime: false}
+        """)
+
+      assert result =~ ~s|{:req, "~> 0.5"},|
+      assert result =~ ~s|{:ex_doc, ">= 0.0.0", only: :dev, runtime: false}|
+
+      refute result =~ ~s|{:phoenix, "~> 2.0"}|
+      refute result =~ ~s|{:jason, "~> 9.9"}|
+
+      assert result =~ ~s|{:phoenix, "~> 1.8"},|
+      assert result =~ ~s|{:jason, "~> 1.4"},|
+    end
+
+    test "returns the source unchanged when every dependency is already present" do
+      write_file!("mix.exs", mix_project())
+
+      result =
+        Patcher.inject_dependency("""
+        {:phoenix, "~> 99.0"}
+        {:jason, "~> 99.0"}
+        """)
+
+      assert result == mix_project()
+    end
   end
 
   describe "inject_before/1 for Elixir files uses ExAST" do
