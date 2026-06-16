@@ -26,5 +26,5 @@ saas_kit-*.tar
 /tmp/
 
 .env
-
+.DS_Store
 .claude/
